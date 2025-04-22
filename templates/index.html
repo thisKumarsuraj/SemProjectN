@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Patient Readmission Predictor</title>
+  <style>
+    :root {
+      --primary: #4361ee;
+      --primary-dark: #3a56d4;
+      --secondary: #7209b7;
+      --light: #f8f9fa;
+      --dark: #212529;
+      --success: #38b000;
+      --warning: #f48c06;
+      --danger: #d00000;
+      --gray: #adb5bd;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: var(--dark);
+    }
+    
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+      width: 95%;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 30px;
+      overflow: hidden;
+    }
+    
+    header {
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    
+    h1 {
+      color: var(--primary);
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+    
+    .subtitle {
+      color: var(--gray);
+      font-size: 1.1rem;
+    }
+    
+    .form-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    
+    @media (min-width: 768px) {
+      .form-container {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    
+    @media (min-width: 992px) {
+      .form-container {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+    }
+    
+    .form-section {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .form-section h3 {
+      color: var(--secondary);
+      margin-bottom: 15px;
+      font-size: 1.3rem;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 8px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--dark);
+    }
+    
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+    
+    input[type="number"]:focus,
+    select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+      outline: none;
+    }
+    
+    .actions {
+      text-align: center;
+      margin-top: 30px;
+    }
+    
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px 30px;
+      border-radius: 50px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+    }
+    
+    button:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+    }
+    
+    .result-container {
+      margin-top: 30px;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      transition: all 0.5s;
+      opacity: 0;
+      height: 0;
+      overflow: hidden;
+    }
+    
+    .result-container.active {
+      opacity: 1;
+      height: auto;
+      margin-bottom: 20px;
+    }
+    
+    .result-title {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+      color: var(--dark);
+    }
+    
+    .result-content {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    
+    .result-badge {
+      padding: 15px 30px;
+      border-radius: 50px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+    
+    .readmitted {
+      background: #ffddd2;
+      color: var(--danger);
+    }
+    
+    .not-readmitted {
+      background: #d8f3dc;
+      color: var(--success);
+    }
+    
+    .probability {
+      font-size: 1.1rem;
+      color: var(--gray);
+    }
+    
+    .progress-container {
+      width: 100%;
+      max-width: 300px;
+      height: 10px;
+      background: #eee;
+      border-radius: 5px;
+      margin-top: 15px;
+      overflow: hidden;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--success) 0%, var(--danger) 100%);
+      border-radius: 5px;
+      transition: all 0.5s;
+    }
+    
+    .loading {
+      display: none;
+      text-align: center;
+      margin: 20px 0;
+    }
+    
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-left-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+    
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    
+    .error-message {
+      color: var(--danger);
+      text-align: center;
+      margin-top: 15px;
+      font-weight: 500;
+      display: none;
+    }
+    
+    .info-tooltip {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      background: var(--gray);
+      color: white;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 18px;
+      font-size: 12px;
+      margin-left: 5px;
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .info-tooltip .tooltip-content {
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      width: 200px;
+      display: none;
+      font-size: 12px;
+      line-height: 1.4;
+      z-index: 100;
+    }
+    
+    .info-tooltip:hover .tooltip-content {
+      display: block;
+    }
+    
+    .category-info {
+      margin-top: 8px;
+      padding: 5px 10px;
+      background: #f0f0f0;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      color: #555;
+    }
+    
+    .diag-category {
+      font-size: 0.9rem;
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: #f0f8ff;
+      border-radius: 6px;
+      border-left: 3px solid var(--primary);
+    }
+
+    /* Form sections */
+    .patient-info {
+      background: linear-gradient(to bottom right, #e6f7ff, #ffffff);
+    }
+    
+    .hospital-stay {
+      background: linear-gradient(to bottom right, #fff9e6, #ffffff);
+    }
+    
+    .medications {
+      background: linear-gradient(to bottom right, #e6fff3, #ffffff);
+    }
+    
+    .diagnosis {
+      background: linear-gradient(to bottom right, #f0e6ff, #ffffff);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Patient Readmission Predictor</h1>
+      <p class="subtitle">Enter patient data to predict likelihood of hospital readmission</p>
+    </header>
+    
+    <form id="predictForm">
+      <div class="form-container">
+        <!-- Patient Demographics Section -->
+        <div class="form-section patient-info">
+          <h3>Patient Demographics</h3>
+          
+          <div class="form-group">
+            <label for="age">Age Range</label>
+            <select name="age" id="age" required>
+              <option value="" disabled selected>Select age range</option>
+              <option value="[0-10)">[0-10) years</option>
+              <option value="[10-20)">[10-20) years</option>
+              <option value="[20-30)">[20-30) years</option>
+              <option value="[30-40)">[30-40) years</option>
+              <option value="[40-50)">[40-50) years</option>
+              <option value="[50-60)">[50-60) years</option>
+              <option value="[60-70)">[60-70) years</option>
+              <option value="[70-80)">[70-80) years</option>
+              <option value="[80-90)">[80-90) years</option>
+              <option value="[90-100)">[90-100) years</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="gender">Gender</label>
+            <select name="gender" id="gender" required>
+              <option value="" disabled selected>Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="race">Race/Ethnicity</label>
+            <select name="race" id="race" required>
+              <option value="" disabled selected>Select race/ethnicity</option>
+              <option value="Caucasian">Caucasian</option>
+              <option value="AfricanAmerican">African American</option>
+              <option value="Hispanic">Hispanic</option>
+              <option value="Asian">Asian</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Hospital Stay Details -->
+        <div class="form-section hospital-stay">
+          <h3>Hospital Stay Details</h3>
+          
+          <div class="form-group">
+            <label for="time_in_hospital">Time in Hospital (days)</label>
+            <input type="number" min="0" step="1" id="time_in_hospital" name="time_in_hospital" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="admission_source_id">Admission Source</label>
+            <select name="admission_source_id" id="admission_source_id" required>
+              <option value="" disabled selected>Select admission source</option>
+              <option value="1">Physician Referral [1]</option>
+              <option value="2">Clinic Referral [2]</option>
+              <option value="3">HMO Referral [3]</option>
+              <option value="4">Transfer from Hospital [4]</option>
+              <option value="5">Transfer from SNF [5]</option>
+              <option value="6">Transfer from Healthcare Facility [6]</option>
+              <option value="7">Emergency Room [7]</option>
+              <option value="8">Court/Law Enforcement [8]</option>
+              <option value="9">Not Available [9]</option>
+              <option value="10">Transfer from Critical Access Hospital[10]</option>
+              <option value="11">Information Not Available [11]</option>
+              <option value="13">Another (13)</option>
+              <option value="14">Another (14)</option>
+              <option value="17">Born in Hospital</option>
+              <option value="20">Unknown (20)</option>
+              <option value="21">Unknown (21)</option>
+              <option value="22">Unknown (22)</option>
+              <option value="25">Unknown (25)</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="discharge_disposition_id">Discharge Disposition</label>
+            <select name="discharge_disposition_id" id="discharge_disposition_id" required>
+              <option value="" disabled selected>Select discharge disposition</option>
+              <option value="1">Discharged to Home [1]</option>
+              <option value="2">Discharged to Another Hospital [2]</option>
+              <option value="3">Discharged to SNF [3]</option>
+              <option value="4">Discharged to ICF [4]</option>
+              <option value="5">Discharged to Other Facility [5]</option>
+              <option value="6">Home with Home Health [6]</option>
+              <option value="7">Left Against Medical Advice [7]</option>
+              <option value="8">Home with Home Health Agency [8]</option>
+              <option value="11">Rehabilitation Facility [11]</option>
+              <option value="12">Unknown (12)</option>
+              <option value="13">Expired</option>
+              <option value="14">Still a Patient</option>
+              <option value="15">Unknown (15)</option>
+              <option value="16">Unknown (16)</option>
+              <option value="17">Unknown (17)</option>
+              <option value="22">Unknown (22)</option>
+              <option value="23">Unknown (23)</option>
+              <option value="24">Unknown (24)</option>
+              <option value="25">Hospice</option>
+              <option value="26">Hospice</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Prior Medical History -->
+        <div class="form-section">
+          <h3>Prior Medical History</h3>
+          
+          <div class="form-group">
+            <label for="number_outpatient">Number of Outpatient Visits</label>
+            <input type="number" min="0" step="1" id="number_outpatient" name="number_outpatient" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="number_emergency">Number of Emergency Visits</label>
+            <input type="number" min="0" step="1" id="number_emergency" name="number_emergency" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="number_inpatient">Number of Inpatient Visits</label>
+            <input type="number" min="0" step="1" id="number_inpatient" name="number_inpatient" required>
+          </div>
+        </div>
+        
+        <!-- Current Medical Details -->
+        <div class="form-section diagnosis">
+          <h3>Current Medical Details</h3>
+          
+          <div class="form-group">
+            <label for="primary_diag">Primary Diagnosis Code (ICD-9)</label>
+            <input type="number" id="primary_diag" name="primary_diag" required>
+            <div id="diag-category" class="diag-category">Enter diagnosis code</div>
+          </div>
+          
+          <div class="form-group">
+            <label for="number_diagnoses">Number of Diagnoses</label>
+            <input type="number" min="0" step="1" id="number_diagnoses" name="number_diagnoses" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="num_procedures">Number of Procedures</label>
+            <input type="number" min="0" step="1" id="num_procedures" name="num_procedures" required>
+          </div>
+        </div>
+        
+        <!-- Lab Tests -->
+        <div class="form-section">
+          <h3>Lab Tests</h3>
+          
+          <div class="form-group">
+            <label for="max_glu_serum">Max Glucose Serum Test Result</label>
+            <select name="max_glu_serum" id="max_glu_serum" required>
+              <option value="" disabled selected>Select result</option>
+              <option value="Norm">Normal</option>
+              <option value=">200">Above 200</option>
+              <option value=">300">Above 300</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="A1Cresult">A1C Test Result</label>
+            <select name="A1Cresult" id="A1Cresult" required>
+              <option value="" disabled selected>Select result</option>
+              <option value="Norm">Normal</option>
+              <option value=">7">Above 7</option>
+              <option value=">8">Above 8</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Medications Section -->
+        <div class="form-section medications">
+          <h3>Medications</h3>
+          
+          <div class="form-group">
+            <label for="num_medications">Number of Medications</label>
+            <input type="number" min="0" step="1" id="num_medications" name="num_medications" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="insulin">Insulin</label>
+            <select name="insulin" id="insulin" required>
+              <option value="" disabled selected>Select status</option>
+              <option value="No">Not Prescribed</option>
+              <option value="Steady">Steady</option>
+              <option value="Up">Increased</option>
+              <option value="Down">Decreased</option>
+            </select>
+          </div>
+          
+          
+        </div>
+      </div>
+      
+      <!-- Additional Medications Collapsible Section -->
+      <div class="form-section">
+        <h3>Additional Medications [Drugs]</h3>
+        <div class="form-container">
+          <div class="form-group">
+            <label for="glipizide">Glipizide</label>
+            <select name="glipizide" id="glipizide" required>
+              <option value="No">Not Prescribed</option>
+              <option value="Steady">Steady</option>
+              <option value="Up">Increased</option>
+              <option value="Down">Decreased</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="glyburide">Glyburide</label>
+            <select name="glyburide" id="glyburide" required>
+              <option value="No">Not Prescribed</option>
+              <option value="Steady">Steady</option>
+              <option value="Up">Increased</option>
+              <option value="Down">Decreased</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="pioglitazone">Pioglitazone</label>
+            <select name="pioglitazone" id="pioglitazone" required>
+              <option value="No">Not Prescribed</option>
+              <option value="Steady">Steady</option>
+              <option value="Up">Increased</option>
+              <option value="Down">Decreased</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="rosiglitazone">Rosiglitazone</label>
+            <select name="rosiglitazone" id="rosiglitazone" required>
+              <option value="No">Not Prescribed</option>
+              <option value="Steady">Steady</option>
+              <option value="Up">Increased</option>
+              <option value="Down">Decreased</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="repaglinide">Repaglinide</label>
+            <select name="repaglinide" id="repaglinide" required>
+              <option value="No">Not Prescribed</option>
+              <option value="Steady">Steady</option>
+              <option value="Up">Increased</option>
+              <option value="Down">Decreased</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="nateglinide">Nateglinide</label>
+            <select name="nateglinide" id="nateglinide" required>
+              <option value="No">Not Prescribed</option>
+              <option value="Steady">Steady</option>
+              <option value="Up">Increased</option>
+              <option value="Down">Decreased</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="chlorpropamide">Chlorpropamide</label>
+            <select name="chlorpropamide" id="chlorpropamide" required>
+              <option value="No">Not Prescribed</option>
+              <option value="Steady">Steady</option>
+              <option value="Up">Increased</option>
+              <option value="Down">Decreased</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="glimepiride">Glimepiride</label>
+            <select name="glimepiride" id="glimepiride" required>
+              <option value="No">Not Prescribed</option>
+              <option value="Steady">Steady</option>
+              <option value="Up">Increased</option>
+              <option value="Down">Decreased</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="acarbose">Acarbose</label>
+            <select name="acarbose" id="acarbose" required>
+              <option value="No">Not Prescribed</option>
+              <option value="Steady">Steady</option>
+              <option value="Up">Increased</option>
+              <option value="Down">Decreased</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="tolazamide">Tolazamide</label>
+            <select name="tolazamide" id="tolazamide" required>
+              <option value="No">Not Prescribed</option>
+              <option value="Steady">Steady</option>
+              <option value="Up">Increased</option>
+              <option value="Down">Decreased</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="glyburide-metformin">Glyburide-Metformin</label>
+            <select name="glyburide-metformin" id="glyburide-metformin" required>
+              <option value="No">Not Prescribed</option>
+              <option value="Steady">Steady</option>
+              <option value="Up">Increased</option>
+              <option value="Down">Decreased</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="metformin">Metformin</label>
+            <select name="metformin" id="metformin" required>
+              <option value="" disabled selected>Select status</option>
+              <option value="No">Not Prescribed</option>
+              <option value="Steady">Steady</option>
+              <option value="Up">Increased</option>
+              <option value="Down">Decreased</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    
+      <div class="actions">
+        <button type="submit">Predict Readmission Risk</button>
+      </div>
+    </form>
+    
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Analyzing patient data...</p>
+    </div>
+    
+    <div class="error-message" id="error-message">
+      Unable to connect to the server. Please try again later.
+    </div>
+    
+    <div class="result-container" id="result-container">
+      <h2 class="result-title">Readmission Prediction</h2>
+      <div class="result-content">
+        <div class="result-badge" id="result-badge"></div>
+        <div class="probability" id="probability-text"></div>
+        <div class="progress-container">
+          <div class="progress-bar" id="probability-bar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize diagnostic code category display
+      const diagInput = document.getElementById('primary_diag');
+      const diagCategory = document.getElementById('diag-category');
+      
+      // Handle diagnostic code input
+      diagInput.addEventListener('input', function() {
+        updateDiagnosisCategory(this.value);
+      });
+      
+      function updateDiagnosisCategory(value) {
+        const val = parseFloat(value);
+        let category = 0;
+        let label = "Other / Unknown / Not Classified";
+        
+        if ((val >= 390 && val < 460) || Math.floor(val) === 785) {
+          category = 1;
+          label = "Circulatory system diseases";
+        } else if ((val >= 460 && val < 520) || Math.floor(val) === 786) {
+          category = 2;
+          label = "Respiratory system diseases";
+        } else if ((val >= 520 && val < 580) || Math.floor(val) === 787) {
+          category = 3;
+          label = "Digestive system diseases";
+        } else if (Math.floor(val) === 250) {
+          category = 4;
+          label = "Diabetes mellitus";
+        } else if (val >= 800 && val < 1000) {
+          category = 5;
+          label = "Injury and poisoning";
+        } else if (val >= 710 && val < 740) {
+          category = 6;
+          label = "Musculoskeletal diseases and connective tissue";
+        } else if ((val >= 580 && val < 630) || Math.floor(val) === 788) {
+          category = 7;
+          label = "Genitourinary diseases";
+        } else if (val >= 140 && val < 240) {
+          category = 8;
+          label = "Neoplasms (Cancers and Tumors)";
+        }
+        
+        if (isNaN(val)) {
+          diagCategory.innerText = "Enter a valid diagnosis code";
+          diagCategory.style.borderLeft = "3px solid #aaa";
+        } else {
+          diagCategory.innerText = `Category ${category}: ${label}`;
+          diagCategory.style.borderLeft = "3px solid var(--primary)";
+        }
+      }
+
+      // Form submission handler
+      document.getElementById('predictForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        // Show loading spinner
+        document.querySelector('.loading').style.display = 'block';
+        document.getElementById('error-message').style.display = 'none';
+        document.getElementById('result-container').classList.remove('active');
+        
+        const formData = new FormData(this);
+        const data = processFormData(formData);
+        
+        try {
+          const response = await fetch('http://localhost:5000/predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          
+          if (!response.ok) {
+            throw new Error('Server error');
+          }
+          
+          const result = await response.json();
+          displayResult(result);
+        } catch (error) {
+          console.error('Error:', error);
+          document.querySelector('.loading').style.display = 'none';
+          document.getElementById('error-message').style.display = 'block';
+        }
+      });
+      
+      function processFormData(formData) {
+        const data = {};
+        
+        // Mean and std from training data
+        const trainingMeans = {
+          num_procedures: 1.331825,
+          number_outpatient: 0.373436,
+          number_inpatient: 0.640336,
+          num_medications: 15.986351,
+          number_emergency: 0.201853,
+          number_diagnoses: 7.426305,
+          time_in_hospital: 4.391631
+        };
+
+        const trainingStds = {
+          num_procedures: 1.698336,
+          number_outpatient: 1.273436,
+          number_inpatient: 1.270344,
+          num_medications: 8.084183,
+          number_emergency: 0.945075,
+          number_diagnoses: 1.930833,
+          time_in_hospital: 2.976211
+        };
+
+        const nonlogColumns = [
+          'time_in_hospital',
+          'num_procedures',
+          'num_medications',
+          'number_diagnoses'
+        ];
+
+        const logColumns = [
+            'number_outpatient',
+            'number_emergency',
+            'number_inpatient',
+          ]
+
+        
+        // Process form data
+        formData.forEach((value, key) => {
+          // Process numeric fields with log transformationj
+          if (logColumns.includes(key)) {
+            let numValue = parseFloat(value);
+            let logVal = Math.log1p(numValue);
+            let standardized = (logVal - trainingMeans[key]) / trainingStds[key];
+            data[key + '_log'] = standardized;
+          }
+
+          if (nonlogColumns.includes(key)) {
+            let numValue = parseFloat(value);
+            let logVal = Math.log1p(numValue);
+            let standardized = (logVal - trainingMeans[key]) / trainingStds[key];
+            data[key] = standardized;
+          }
+          
+          
+          // Process age field
+    if (key === "age") {
+        const ageMap = {
+          "[0-10)": 5,
+          "[10-20)": 15,
+          "[20-30)": 25,
+          "[30-40)": 35,
+          "[40-50)": 45,
+          "[50-60)": 55,
+          "[60-70)": 65,
+          "[70-80)": 75,
+          "[80-90)": 85,
+          "[90-100)": 95
+        };
+        data["age"] = ageMap[value];
+      }
+      
+      // Process medication fields
+      const drugFields = [
+        'metformin', 'repaglinide', 'nateglinide', 'chlorpropamide', 'glimepiride',
+        'glipizide', 'glyburide', 'pioglitazone', 'rosiglitazone', 'acarbose',
+        'tolazamide', 'insulin', 'glyburide-metformin'
+      ];
+      
+      if (drugFields.includes(key)) {
+        data[key] = (value === 'No') ? 0 : 1;
+      }
+      
+      // Process race field
+      if (key === "race") {
+        data["race_1"] = value === "Caucasian" ? 1 : 0;
+        data["race_2"] = value === "AfricanAmerican" ? 1 : 0;
+        data["race_3"] = value === "Hispanic" ? 1 : 0;
+        data["race_4"] = value === "Asian" ? 1 : 0;
+      }
+      
+      // Process gender field
+      if (key === "gender") {
+        data["gender_1"] = value === "Male" ? 1 : 0;
+      }
+      
+      // Process admission source field
+      if (key === "admission_source_id") {
+        let sourceId = parseInt(value);
+        
+        // Recode according to logic
+        if ([2, 3].includes(sourceId)) sourceId = 1;
+        else if ([5, 6, 10, 22, 25].includes(sourceId)) sourceId = 4;
+        else if ([7, 17, 20, 21].includes(sourceId)) sourceId = 9;
+        else if ([13, 14].includes(sourceId)) sourceId = 11;
+        
+        // One-hot encode
+        data["admission_source_id_4"] = sourceId === 4 ? 1 : 0;
+        data["admission_source_id_8"] = sourceId === 8 ? 1 : 0;
+        data["admission_source_id_9"] = sourceId === 9 ? 1 : 0;
+        data["admission_source_id_11"] = sourceId === 11 ? 1 : 0;
+      }
+      
+      // Process discharge disposition field
+      if (key === "discharge_disposition_id") {
+        let dischargeId = parseInt(value);
+        
+        // Recode based on rules
+        if ([6, 8, 9, 13].includes(dischargeId)) dischargeId = 1;
+        else if ([3, 4, 5, 14, 22, 23, 24].includes(dischargeId)) dischargeId = 2;
+        else if ([25, 26].includes(dischargeId)) dischargeId = 18;
+        else if ([12, 15, 16, 17].includes(dischargeId)) dischargeId = 10;
+        
+        // One-hot encode
+        data["discharge_disposition_id_2"] = dischargeId === 2 ? 1 : 0;
+        data["discharge_disposition_id_7"] = dischargeId === 7 ? 1 : 0;
+        data["discharge_disposition_id_10"] = dischargeId === 10 ? 1 : 0;
+        data["discharge_disposition_id_18"] = dischargeId === 18 ? 1 : 0;
+      }
+      
+      // Process Max Glucose Serum
+      if (key === "max_glu_serum") {
+        data["max_glu_serum_1.0"] = value === "Norm" ? 0 : 1;
+      }
+      
+      // Process A1C Result
+      if (key === "A1Cresult") {
+        data["A1Cresult_1"] = value === "Norm" ? 0 : 1;
+      }
+      
+      // Process primary diagnosis
+      if (key === "primary_diag") {
+        const diagCode = parseFloat(value);
+        let category = 0;
+        
+        if ((diagCode >= 390 && diagCode < 460) || Math.floor(diagCode) === 785) {
+          category = 1;
+        } else if ((diagCode >= 460 && diagCode < 520) || Math.floor(diagCode) === 786) {
+          category = 2;
+        } else if ((diagCode >= 520 && diagCode < 580) || Math.floor(diagCode) === 787) {
+          category = 3;
+        } else if (Math.floor(diagCode) === 250) {
+          category = 4;
+        } else if (diagCode >= 800 && diagCode < 1000) {
+          category = 5;
+        } else if (diagCode >= 710 && diagCode < 740) {
+          category = 6;
+        } else if ((diagCode >= 580 && diagCode < 630) || Math.floor(diagCode) === 788) {
+          category = 7;
+        } else if (diagCode >= 140 && diagCode < 240) {
+          category = 8;
+        }
+        
+        // Set all to 0 first
+        for (let i = 1; i <= 8; i++) {
+            data[`primary_diag_${i}`] = 0;
+        }
+
+        // Set only the matching category to 1
+        if (category >= 1 && category <= 8) {
+            data[`primary_diag_${category}`] = 1;
+        }
+      }
+    });
+
+    console.log(data)
+    
+    return data;
+  }
+  
+  // Display the prediction result
+  function displayResult(result) {
+    document.querySelector('.loading').style.display = 'none';
+    const resultContainer = document.getElementById('result-container');
+    const resultBadge = document.getElementById('result-badge');
+    const probabilityText = document.getElementById('probability-text');
+    const probabilityBar = document.getElementById('probability-bar');
+    
+    resultContainer.classList.add('active');
+    
+    const probability = result.probability * 100;
+    probabilityBar.style.width = `${probability}%`;
+    
+    if (result.label === 1) {
+      resultBadge.innerText = 'LIKELY TO BE READMITTED';
+      resultBadge.className = 'result-badge readmitted';
+    } else {
+      resultBadge.innerText = 'NOT LIKELY TO BE READMITTED';
+      resultBadge.className = 'result-badge not-readmitted';
+    }
+    
+    probabilityText.innerText = `Probability: ${probability.toFixed(1)}%`;
+  }
+  
+  // Add event listeners once the document is loaded
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize diagnostic code category display
+    const diagInput = document.getElementById('primary_diag');
+    const diagCategory = document.getElementById('diag-category');
+    
+    // Handle diagnostic code input
+    diagInput.addEventListener('input', function() {
+      updateDiagnosisCategory(this.value);
+    });
+    
+    function updateDiagnosisCategory(value) {
+      const val = parseFloat(value);
+      let category = 0;
+      let label = "Other / Unknown / Not Classified";
+      
+      if ((val >= 390 && val < 460) || Math.floor(val) === 785) {
+        category = 1;
+        label = "Circulatory system diseases";
+      } else if ((val >= 460 && val < 520) || Math.floor(val) === 786) {
+        category = 2;
+        label = "Respiratory system diseases";
+      } else if ((val >= 520 && val < 580) || Math.floor(val) === 787) {
+        category = 3;
+        label = "Digestive system diseases";
+      } else if (Math.floor(val) === 250) {
+        category = 4;
+        label = "Diabetes mellitus";
+      } else if (val >= 800 && val < 1000) {
+        category = 5;
+        label = "Injury and poisoning";
+      } else if (val >= 710 && val < 740) {
+        category = 6;
+        label = "Musculoskeletal diseases and connective tissue";
+      } else if ((val >= 580 && val < 630) || Math.floor(val) === 788) {
+        category = 7;
+        label = "Genitourinary diseases";
+      } else if (val >= 140 && val < 240) {
+        category = 8;
+        label = "Neoplasms (Cancers and Tumors)";
+      }
+      
+      if (isNaN(val)) {
+        diagCategory.innerText = "Enter a valid diagnosis code";
+        diagCategory.style.borderLeft = "3px solid #aaa";
+      } else {
+        diagCategory.innerText = `Category ${category}: ${label}`;
+        diagCategory.style.borderLeft = "3px solid var(--primary)";
+      }
+    }
+  
+    // Form submission handler
+    document.getElementById('predictForm').addEventListener('submit', async function(event) {
+      event.preventDefault();
+      
+      // Show loading spinner
+      document.querySelector('.loading').style.display = 'block';
+      document.getElementById('error-message').style.display = 'none';
+      document.getElementById('result-container').classList.remove('active');
+      
+      const formData = new FormData(this);
+      const data = processFormData(formData);
+      //console.log(data);
+      
+      try {
+        const response = await fetch('http://127.0.0.1:5000/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+          throw new Error('Server error');
+        }
+        
+        const result = await response.json();
+        displayResult(result);
+      } catch (error) {
+        console.error('Error:', error);
+        document.querySelector('.loading').style.display = 'none';
+        document.getElementById('error-message').style.display = 'block';
+        console.error('Fetch Error:', error);
+document.getElementById('error-message').innerText = 'Error: ' + error.message;
+console.log(JSON.stringify(data, null, 2));
+
+      }
+    });
+  });
+});
+</script>
+
+</body>
+</html>
