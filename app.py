@@ -1,26 +1,26 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
 import pickle
 import numpy as np
-from flask_cors import CORS
-from flask import render_template
-
+import os
 
 app = Flask(__name__)
 CORS(app)
+
+# Homepage route
 @app.route('/')
 def home():
-    return render_template('index.html')
-
+    return render_template('index.html')  # Make sure index.html is in /templates folder!
 
 # Load your trained model
 with open("random_forest_model (2).pkl", "rb") as f:
     model = pickle.load(f)
 
+# Prediction route
 @app.route('/predict', methods=['POST'])
 def predict():
     data = request.get_json()
     try:
-        # Extract features in correct order
         input_order = [
             'age', 'time_in_hospital', 'num_procedures', 'num_medications',
             'number_outpatient_log', 'number_emergency_log', 'number_inpatient_log',
@@ -35,8 +35,6 @@ def predict():
             'primary_diag_1', 'primary_diag_2', 'primary_diag_3', 'primary_diag_4',
             'primary_diag_5', 'primary_diag_6', 'primary_diag_7', 'primary_diag_8'
         ]
-        
-        print("Received keys:", list(data.keys()))
 
         features = [data[key] for key in input_order]
         features_array = np.array([features])
@@ -48,4 +46,5 @@ def predict():
         return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    port = int(os.environ.get('PORT', 5000))  # For Render's dynamic port
+    app.run(debug=False, host='0.0.0.0', port=port)
